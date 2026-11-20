@@ -1,6 +1,6 @@
 {
   "name": "loja-online-backend",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "SaaS de lojas online para comércios locais: vitrine, pedidos com aprovação, frete por km, Pix e licença mensal",
   "main": "src/server.js",
   "scripts": {
@@ -10,7 +10,9 @@
     "criar-admin": "node scripts/criarAdmin.js",
     "testar": "node scripts/testarFluxo.js"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": "24.x"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.5",

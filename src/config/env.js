@@ -28,6 +28,8 @@ module.exports = {
 
   // E-mails (recuperar senha, novo pedido). Sem chave = só aparece no terminal
   email: {
+    brevoKey: process.env.BREVO_API_KEY || '',
+    brevoRemetente: process.env.BREVO_REMETENTE || '', // seu e-mail verificado no Brevo (pode ser Gmail)
     resendKey: process.env.RESEND_API_KEY || '',
     remetente: process.env.EMAIL_REMETENTE || 'Loja Online <onboarding@resend.dev>',
   },

@@ -15,6 +15,7 @@ const { salvarImagem, apagarImagensLocais } = require('../services/imagens');
 const pedidos = require('../services/pedidos');
 const { ErroApp } = require('../utils/erros');
 const { normalizarTelefone } = require('../utils/formatos');
+const { normalizarChavePix } = require('../utils/chavePix');
 const { suporteWhatsapp, frontendUrls } = require('../config/env');
 
 const router = express.Router();
@@ -81,6 +82,7 @@ const lojaSchema = z.object({
     prazoRetirada: z.string().trim().max(80),
   }).optional(),
   pagamento: z.object({
+    tipoChave: z.enum(['', 'cpf', 'cnpj', 'telefone', 'email', 'aleatoria']).default(''),
     chavePix: z.string().trim().max(77),
     nomeRecebedor: z.string().trim().max(25),
     cidade: z.string().trim().max(15),
@@ -103,7 +105,10 @@ router.put('/loja', validar(lojaSchema), async (req, res) => {
   }
   if (d.whatsapp) loja.whatsapp = normalizarTelefone(d.whatsapp);
   if (d.entrega) loja.entrega = d.entrega;
-  if (d.pagamento) loja.pagamento = d.pagamento;
+  if (d.pagamento) {
+    const { tipo, chave } = normalizarChavePix(d.pagamento.tipoChave, d.pagamento.chavePix);
+    loja.pagamento = { ...d.pagamento, tipoChave: tipo, chavePix: chave };
+  }
   if (d.regras) loja.regras = d.regras;
   let avisoEndereco = null;
   if (d.endereco) {
@@ -122,7 +127,7 @@ router.put('/loja', validar(lojaSchema), async (req, res) => {
 });
 
 // ---------- Fotos ----------
-router.post('/imagens', express.json({ limit: '1mb' }), validar(z.object({ dados: z.string().max(1_000_000) })), async (req, res) => {
+router.post('/imagens', validar(z.object({ dados: z.string().max(1_000_000) })), async (req, res) => {
   res.status(201).json({ url: await salvarImagem(req.validado.dados, req.usuario.lojaId) });
 });
 

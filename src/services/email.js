@@ -1,5 +1,7 @@
-// Envio de e-mails pelo Resend (resend.com — 3.000 grátis por mês).
-// Sem RESEND_API_KEY no .env, o e-mail só aparece no terminal (modo simulado).
+// Envio de e-mails. Ordem de preferência:
+//  1) Brevo (brevo.com — 300/dia grátis): envia usando o SEU e-mail (pode ser Gmail), sem domínio próprio
+//  2) Resend (resend.com): sem domínio verificado, só entrega para o e-mail dono da conta
+//  3) Nenhum configurado: o e-mail só aparece no log (modo simulado)
 const { email } = require('../config/env');
 
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -14,6 +16,21 @@ function modelo(titulo, paragrafos, botao) {
 
 async function enviarEmail({ para, assunto, titulo, paragrafos, botao }) {
   if (!para) return;
+  if (email.brevoKey && email.brevoRemetente) {
+    try {
+      const nomeRemetente = (email.remetente.match(/^(.*?)\s*</)?.[1] || 'Loja Online').trim();
+      const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'api-key': email.brevoKey, 'Content-Type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ sender: { name: nomeRemetente, email: email.brevoRemetente }, to: [{ email: para }], subject: assunto, htmlContent: modelo(titulo, paragrafos, botao) }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!r.ok) console.error('❌ E-mail (Brevo) não enviado:', r.status, await r.text());
+    } catch (erro) {
+      console.error('❌ E-mail (Brevo) não enviado:', erro.message);
+    }
+    return;
+  }
   if (!email.resendKey) {
     console.log(`📧 [simulado] Para: ${para} | ${assunto}${botao ? ` | ${botao.url}` : ''}`);
     return { simulado: true };

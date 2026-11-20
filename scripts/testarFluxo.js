@@ -101,6 +101,19 @@ async function main() {
     r = await api('PUT', '/painel/loja', { entrega: { ativa: false, valorKm: 1.5, taxaMinima: 5, raioMaxKm: 20, calculo: 'ida', cidades: [], prazo: '', retiradaAtiva: false, prazoRetirada: '' } }, tokenLojista);
     conferir(r.status === 400, 'não deixa desligar entrega E retirada ao mesmo tempo');
 
+    console.log('\n💠 Chave Pix no formato do banco');
+    const pagBase = { nomeRecebedor: 'LOJA TESTE', cidade: 'SAO GONCALO', aceitaNaEntrega: true };
+    r = await api('PUT', '/painel/loja', { pagamento: { ...pagBase, tipoChave: 'cpf', chavePix: '529.982.247-25' } }, tokenLojista);
+    conferir(r.dados?.loja?.pagamento?.chavePix === '52998224725', 'CPF com pontos vira só números', r.dados?.loja?.pagamento);
+    r = await api('PUT', '/painel/loja', { pagamento: { ...pagBase, tipoChave: 'telefone', chavePix: '(21) 99999-0000' } }, tokenLojista);
+    conferir(r.dados?.loja?.pagamento?.chavePix === '+5521999990000', 'celular vira +5521999990000', r.dados?.loja?.pagamento);
+    r = await api('PUT', '/painel/loja', { pagamento: { ...pagBase, tipoChave: 'cpf', chavePix: '111.111.111-11' } }, tokenLojista);
+    conferir(r.status === 400, 'CPF inválido é recusado');
+    r = await api('PUT', '/painel/loja', { pagamento: { ...pagBase, chavePix: '21999990000' } }, tokenLojista);
+    conferir(r.status === 400, '11 dígitos sem tipo: pede para escolher (CPF ou celular)');
+    r = await api('PUT', '/painel/loja', { pagamento: { ...pagBase, chavePix: 'teste@pix.com' } }, tokenLojista);
+    conferir(r.dados?.loja?.pagamento?.tipoChave === 'email', 'e-mail é reconhecido sozinho');
+
     console.log('\n🖼️  Fotos');
     const pngMinimo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
     r = await api('POST', '/painel/imagens', { dados: pngMinimo }, tokenLojista);

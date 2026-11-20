@@ -17,9 +17,23 @@ app.set('trust proxy', 1); // necessário no Render (IP real do cliente)
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } })); // fotos abrem no site da loja
 app.use(cors({ origin: frontendUrls }));
 app.use(compression());
-// Fotos chegam maiores (até 1 MB); o resto da API aceita no máximo 100 KB
+// Fotos chegam maiores (até 1 MB); o resto da API aceita no máximo 100 KB.
+// O corpo é lido logo na entrada (antes do login), para a conexão não ficar parada.
 const jsonPequeno = express.json({ limit: '100kb' });
-app.use((req, res, next) => (req.path === '/painel/imagens' ? next() : jsonPequeno(req, res, next)));
+const jsonFoto = express.json({ limit: '1mb' });
+app.use((req, res, next) => (req.path === '/painel/imagens' ? jsonFoto(req, res, next) : jsonPequeno(req, res, next)));
+
+// Registro no log do Render: envios de foto, erros e requisições lentas
+app.use((req, res, next) => {
+  const inicio = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - inicio;
+    if (res.statusCode >= 500 || ms > 5000 || req.path === '/painel/imagens') {
+      console.log(`📝 ${req.method} ${req.path} → ${res.statusCode} em ${ms} ms${req.headers['content-length'] ? ` (${Math.round(req.headers['content-length'] / 1024)} KB)` : ''}`);
+    }
+  });
+  next();
+});
 
 app.get('/health', (_req, res) => res.json({ ok: true, horario: new Date().toISOString() }));
 app.get('/status', async (_req, res) => res.json({ aviso: await avisoPublico() }));

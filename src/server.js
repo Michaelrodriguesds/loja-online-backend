@@ -9,7 +9,11 @@ async function iniciar() {
   try {
     await conectarBanco(config.mongoUri);
     iniciarTarefas();
-    app.listen(config.porta, () => console.log(`🚀 API rodando em http://localhost:${config.porta}`));
+    const servidor = app.listen(config.porta, () => console.log(`🚀 API rodando na porta ${config.porta}`));
+    // O proxy do Render mantém conexões abertas por mais tempo que o padrão do Node (5s).
+    // Se o Node fecha antes, o Render devolve 502. Por isso: 2 minutos.
+    servidor.keepAliveTimeout = 120 * 1000;
+    servidor.headersTimeout = 125 * 1000;
   } catch (erro) {
     console.error('❌ Não foi possível iniciar a API:', erro.message);
     process.exit(1);

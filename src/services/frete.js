@@ -32,6 +32,12 @@ async function geocodificar(texto) {
   const chave = `geo:${semAcentos(texto).toLowerCase()}`;
   try {
     return await comCache(chave, 24 * 60 * 60 * 1000, async () => {
+      // Com chave do OpenRouteService, usa o geocoder dele (mais estável que o Nominatim no Render)
+      if (cfg.orsKey) {
+        const d = await buscarJson(`https://api.openrouteservice.org/geocode/search?api_key=${encodeURIComponent(cfg.orsKey)}&size=1&boundary.country=BR&text=${encodeURIComponent(texto)}`);
+        const ponto = d.features?.[0]?.geometry?.coordinates;
+        return ponto ? { lat: ponto[1], lng: ponto[0] } : null;
+      }
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(texto)}`;
       const lista = await buscarJson(url, { headers: { 'User-Agent': `LojaOnlineSaaS/1.0 (${cfg.contato})`, 'Accept-Language': 'pt-BR' } });
       if (!lista?.length) return null;
@@ -45,7 +51,7 @@ async function geocodificar(texto) {
 
 async function distanciaRuaKm(a, b) {
   try {
-    if (cfg.rotas === 'ors' && cfg.orsKey) {
+    if ((cfg.rotas === 'ors' || cfg.orsKey) && cfg.orsKey) {
       const d = await buscarJson(
         `https://api.openrouteservice.org/v2/directions/driving-car?start=${a.lng},${a.lat}&end=${b.lng},${b.lat}`,
         { headers: { Authorization: cfg.orsKey } }

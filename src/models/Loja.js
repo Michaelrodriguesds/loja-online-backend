@@ -43,6 +43,7 @@ const lojaSchema = new Schema(
     },
 
     pagamento: {
+      tipoChave: { type: String, enum: ['', 'cpf', 'cnpj', 'telefone', 'email', 'aleatoria'], default: '' },
       chavePix: { type: String, default: '' },
       nomeRecebedor: { type: String, default: '' },
       cidade: { type: String, default: '' },
