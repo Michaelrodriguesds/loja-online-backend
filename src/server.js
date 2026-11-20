@@ -16,4 +16,8 @@ async function iniciar() {
   }
 }
 
+// Registra no log do Render qualquer erro que escape, em vez de derrubar a API em silêncio
+process.on('unhandledRejection', (erro) => console.error('💥 Promessa sem tratamento:', erro));
+process.on('uncaughtException', (erro) => console.error('💥 Erro não tratado:', erro));
+
 iniciar();

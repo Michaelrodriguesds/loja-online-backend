@@ -11,6 +11,7 @@ function tratarErros(erro, _req, res, _next) {
   if (erro.name === 'CastError') return res.status(400).json({ erro: 'Identificador inválido.' });
   if (erro.name === 'ValidationError') return res.status(400).json({ erro: 'Dados inválidos.', detalhes: Object.values(erro.errors).map((e) => e.message) });
   if (erro.type === 'entity.parse.failed') return res.status(400).json({ erro: 'JSON inválido.' });
+  if (erro.type === 'entity.too.large') return res.status(413).json({ erro: 'Arquivo muito grande. Tente outra foto.' });
   console.error('💥 Erro inesperado:', erro);
   res.status(500).json({ erro: 'Erro interno. Tente novamente.' });
 }
