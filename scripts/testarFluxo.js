@@ -215,6 +215,17 @@ async function main() {
 
     console.log('\n🏬 Retirada pagando no local');
     r = await api('POST', `/publico/lojas/${slug}/pedidos`, { itens: [{ produtoId: bone._id, varId: bone.variacoes[0]._id, qtd: 1 }], modo: 'retirada', pagamento: 'na_entrega' }, tokenCliente);
+    conferir(r.status === 400, 'pagar na loja sem dizer como (cartão/dinheiro...) é recusado');
+    await api('PUT', '/painel/loja', { pagamento: { nomeRecebedor: 'LOJA TESTE', cidade: 'SAO GONCALO', aceitaNaEntrega: true, chavePix: 'teste@pix.com', formasNaEntrega: ['cartao_credito', 'cartao_debito', 'dinheiro'] } }, tokenLojista);
+    r = await api('POST', `/publico/lojas/${slug}/pedidos`, { itens: [{ produtoId: bone._id, varId: bone.variacoes[0]._id, qtd: 1 }], modo: 'retirada', pagamento: 'na_entrega', formaNaEntrega: 'pix' }, tokenCliente);
+    conferir(r.status === 400, 'forma que a loja não aceita (Pix na hora desmarcado) é recusada');
+    r = await api('GET', `/publico/lojas/${slug}`);
+    conferir(r.dados?.pagamento?.formasNaEntrega?.join() === 'cartao_credito,cartao_debito,dinheiro', 'vitrine mostra as formas aceitas na entrega/loja');
+    r = await api('POST', `/publico/lojas/${slug}/pedidos`, { itens: [{ produtoId: bone._id, varId: bone.variacoes[0]._id, qtd: 1 }], modo: 'retirada', pagamento: 'na_entrega', formaNaEntrega: 'dinheiro', trocoPara: 100 }, tokenCliente);
+    conferir(r.status === 201 && r.dados.formaNaEntrega === 'dinheiro' && r.dados.trocoPara === 100, 'pedido em dinheiro guarda o troco (R$ 100)', r.dados);
+    await api('POST', `/publico/lojas/${slug}/pedidos/${r.dados._id}/cancelar`, {}, tokenCliente);
+    r = await api('POST', `/publico/lojas/${slug}/pedidos`, { itens: [{ produtoId: bone._id, varId: bone.variacoes[0]._id, qtd: 1 }], modo: 'retirada', pagamento: 'na_entrega', formaNaEntrega: 'cartao_debito' }, tokenCliente);
+    conferir(r.dados?.formaNaEntrega === 'cartao_debito' && r.dados.trocoPara === null, 'pedido no cartão de débito (aproximação)');
     const p2 = r.dados;
     conferir(r.status === 201 && p2.total === 59.9, 'retirada sem frete', r.dados);
     r = await api('POST', `/painel/pedidos/${p2._id}/aprovar`, {}, tokenLojista);

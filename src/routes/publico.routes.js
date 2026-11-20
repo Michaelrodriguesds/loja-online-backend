@@ -55,7 +55,11 @@ function dadosPublicos(l) {
       calculo: l.entrega.calculo, cidades: l.entrega.cidades, prazo: l.entrega.prazo,
       retiradaAtiva: l.entrega.retiradaAtiva, prazoRetirada: l.entrega.prazoRetirada,
     },
-    pagamento: { pix: !!l.pagamento?.chavePix, aceitaNaEntrega: l.pagamento?.aceitaNaEntrega },
+    pagamento: {
+      pix: !!l.pagamento?.chavePix,
+      aceitaNaEntrega: l.pagamento?.aceitaNaEntrega,
+      formasNaEntrega: l.pagamento?.formasNaEntrega?.length ? l.pagamento.formasNaEntrega : ['cartao_credito', 'cartao_debito', 'pix', 'dinheiro'],
+    },
   };
 }
 
@@ -179,6 +183,8 @@ const pedidoSchema = z.object({
   })).min(1, 'O carrinho está vazio').max(40),
   modo: z.enum(['entrega', 'retirada']),
   pagamento: z.enum(['pix', 'na_entrega']),
+  formaNaEntrega: z.enum(['cartao_credito', 'cartao_debito', 'pix', 'dinheiro']).optional(),
+  trocoPara: z.number().min(0).max(10000).nullable().optional(),
 });
 
 function pedidoParaComprador(loja, p) {

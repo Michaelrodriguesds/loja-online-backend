@@ -70,6 +70,11 @@ async function criarPedido(loja, compradorId, dados) {
   if (dados.modo === 'entrega' && !loja.entrega?.ativa) throw new ErroApp(400, 'Esta loja não faz entregas. Escolha retirar no local.');
   if (dados.modo === 'retirada' && !loja.entrega?.retiradaAtiva) throw new ErroApp(400, 'Esta loja não tem retirada no local.');
   if (dados.pagamento === 'na_entrega' && !loja.pagamento?.aceitaNaEntrega) throw new ErroApp(400, 'Esta loja aceita só Pix.');
+  const formasLoja = loja.pagamento?.formasNaEntrega?.length ? loja.pagamento.formasNaEntrega : ['cartao_credito', 'cartao_debito', 'pix', 'dinheiro'];
+  if (dados.pagamento === 'na_entrega') {
+    if (!dados.formaNaEntrega) throw new ErroApp(400, 'Escolha como vai pagar na entrega/retirada.');
+    if (!formasLoja.includes(dados.formaNaEntrega)) throw new ErroApp(400, 'A loja não aceita essa forma de pagamento.');
+  }
   if (dados.pagamento === 'pix' && !loja.pagamento?.chavePix) throw new ErroApp(400, 'A loja ainda não cadastrou a chave Pix. Escolha pagar na entrega ou fale com a loja.');
 
   const comprador = await Comprador.findOne({ _id: compradorId, lojaId: loja._id }).lean();
@@ -118,6 +123,8 @@ async function criarPedido(loja, compradorId, dados) {
     distanciaKm: frete.distanciaKm,
     freteEstimado: dados.modo === 'entrega' ? frete.frete : 0,
     pagamento: dados.pagamento,
+    formaNaEntrega: dados.pagamento === 'na_entrega' ? dados.formaNaEntrega : '',
+    trocoPara: dados.pagamento === 'na_entrega' && dados.formaNaEntrega === 'dinheiro' && dados.trocoPara ? dados.trocoPara : null,
     subtotal,
     total: somar([subtotal, frete.frete || 0]),
     expiraEm: new Date(Date.now() + (loja.regras?.horasParaExpirar || 12) * HORA_MS),

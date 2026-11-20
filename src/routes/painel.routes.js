@@ -87,6 +87,7 @@ const lojaSchema = z.object({
     nomeRecebedor: z.string().trim().max(25),
     cidade: z.string().trim().max(15),
     aceitaNaEntrega: z.boolean(),
+    formasNaEntrega: z.array(z.enum(['cartao_credito', 'cartao_debito', 'pix', 'dinheiro'])).max(4).default(['cartao_credito', 'cartao_debito', 'pix', 'dinheiro']),
   }).optional(),
   regras: z.object({ horasParaExpirar: z.number().int().min(1).max(168) }).optional(),
 });
@@ -106,6 +107,7 @@ router.put('/loja', validar(lojaSchema), async (req, res) => {
   if (d.whatsapp) loja.whatsapp = normalizarTelefone(d.whatsapp);
   if (d.entrega) loja.entrega = d.entrega;
   if (d.pagamento) {
+    if (d.pagamento.aceitaNaEntrega && !d.pagamento.formasNaEntrega.length) throw new ErroApp(400, 'Marque pelo menos uma forma de pagamento na entrega/retirada.');
     const { tipo, chave } = normalizarChavePix(d.pagamento.tipoChave, d.pagamento.chavePix);
     loja.pagamento = { ...d.pagamento, tipoChave: tipo, chavePix: chave };
   }

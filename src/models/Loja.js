@@ -48,6 +48,8 @@ const lojaSchema = new Schema(
       nomeRecebedor: { type: String, default: '' },
       cidade: { type: String, default: '' },
       aceitaNaEntrega: { type: Boolean, default: true }, // pagar na entrega/retirada (o lojista decide ao aprovar)
+      // Como o cliente pode pagar na entrega/retirada (cartão é por aproximação na maquininha)
+      formasNaEntrega: { type: [String], enum: ['cartao_credito', 'cartao_debito', 'pix', 'dinheiro'], default: ['cartao_credito', 'cartao_debito', 'pix', 'dinheiro'] },
     },
 
     regras: {
