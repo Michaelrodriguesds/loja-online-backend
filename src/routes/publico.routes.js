@@ -16,6 +16,7 @@ const pedidos = require('../services/pedidos');
 const { comCacheSWR } = require('../utils/cache');
 const { ErroApp, ehDuplicado } = require('../utils/erros');
 const { normalizarTelefone } = require('../utils/formatos');
+const { configParcelas } = require('../utils/parcelas');
 const { novoTokenReset, hashToken } = require('../utils/tokens');
 const { frontendUrls } = require('../config/env');
 
@@ -59,6 +60,7 @@ function dadosPublicos(l) {
       pix: !!l.pagamento?.chavePix,
       aceitaNaEntrega: l.pagamento?.aceitaNaEntrega,
       formasNaEntrega: l.pagamento?.formasNaEntrega?.length ? l.pagamento.formasNaEntrega : ['cartao_credito', 'cartao_debito', 'pix', 'dinheiro'],
+      parcelamento: configParcelas(l),
     },
   };
 }
@@ -185,6 +187,7 @@ const pedidoSchema = z.object({
   pagamento: z.enum(['pix', 'na_entrega']),
   formaNaEntrega: z.enum(['cartao_credito', 'cartao_debito', 'pix', 'dinheiro']).optional(),
   trocoPara: z.number().min(0).max(10000).nullable().optional(),
+  parcelas: z.number().int().min(1).max(12).optional(),
 });
 
 function pedidoParaComprador(loja, p) {

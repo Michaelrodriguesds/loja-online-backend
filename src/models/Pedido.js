@@ -47,6 +47,7 @@ const pedidoSchema = new Schema(
     pagamento: { type: String, enum: ['pix', 'na_entrega'], required: true },
     formaNaEntrega: { type: String, enum: ['', 'cartao_credito', 'cartao_debito', 'pix', 'dinheiro'], default: '' }, // escolhida pelo cliente
     trocoPara: { type: Number, default: null }, // se for pagar em dinheiro
+    parcelas: { type: Number, default: 1 }, // crédito na maquininha
     pago: { type: Boolean, default: false },
     subtotal: { type: Number, required: true },
     total: { type: Number, required: true },

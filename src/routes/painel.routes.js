@@ -87,6 +87,12 @@ const lojaSchema = z.object({
     nomeRecebedor: z.string().trim().max(25),
     cidade: z.string().trim().max(15),
     aceitaNaEntrega: z.boolean(),
+    parcelamento: z.object({
+      maxParcelas: z.number().int().min(1).max(12),
+      semJurosAte: z.number().int().min(1).max(12),
+      jurosMes: z.number().min(0).max(15),
+      parcelaMinima: z.number().min(0).max(1000),
+    }).optional(),
     formasNaEntrega: z.array(z.enum(['cartao_credito', 'cartao_debito', 'pix', 'dinheiro'])).max(4).default(['cartao_credito', 'cartao_debito', 'pix', 'dinheiro']),
   }).optional(),
   regras: z.object({ horasParaExpirar: z.number().int().min(1).max(168) }).optional(),

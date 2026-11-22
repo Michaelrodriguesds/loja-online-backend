@@ -11,6 +11,7 @@ const { ErroApp } = require('../utils/erros');
 const { somar, arredondar, paraCentavos } = require('../utils/dinheiro');
 const { gerarPixCopiaCola } = require('../utils/pixEstatico');
 const { calcularFrete } = require('./frete');
+const { calcularParcelas, configParcelas } = require('../utils/parcelas');
 const avisos = require('./notificacoes');
 
 const HORA_MS = 60 * 60 * 1000;
@@ -107,6 +108,14 @@ async function criarPedido(loja, compradorId, dados) {
     if (frete.foraDaArea) throw new ErroApp(400, frete.motivo);
   }
 
+  // Crédito parcelado: confere se a loja permite esse número de parcelas para esse valor
+  let parcelas = 1;
+  if (dados.pagamento === 'na_entrega' && dados.formaNaEntrega === 'cartao_credito' && (dados.parcelas || 1) > 1) {
+    const opcoes = calcularParcelas(somar([subtotal, frete.frete || 0]), configParcelas(loja));
+    if (!opcoes.some((o) => o.n === dados.parcelas)) throw new ErroApp(400, `Para este valor a loja parcela em até ${opcoes.length}x.`);
+    parcelas = dados.parcelas;
+  }
+
   await reservarEstoque(loja._id, itens);
 
   // Número sequencial do pedido nesta loja (atômico)
@@ -125,6 +134,7 @@ async function criarPedido(loja, compradorId, dados) {
     pagamento: dados.pagamento,
     formaNaEntrega: dados.pagamento === 'na_entrega' ? dados.formaNaEntrega : '',
     trocoPara: dados.pagamento === 'na_entrega' && dados.formaNaEntrega === 'dinheiro' && dados.trocoPara ? dados.trocoPara : null,
+    parcelas,
     subtotal,
     total: somar([subtotal, frete.frete || 0]),
     expiraEm: new Date(Date.now() + (loja.regras?.horasParaExpirar || 12) * HORA_MS),

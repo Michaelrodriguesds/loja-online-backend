@@ -227,6 +227,22 @@ async function main() {
     r = await api('POST', `/publico/lojas/${slug}/pedidos`, { itens: [{ produtoId: bone._id, varId: bone.variacoes[0]._id, qtd: 1 }], modo: 'retirada', pagamento: 'na_entrega', formaNaEntrega: 'cartao_debito' }, tokenCliente);
     conferir(r.dados?.formaNaEntrega === 'cartao_debito' && r.dados.trocoPara === null, 'pedido no cartão de débito (aproximação)');
     const p2 = r.dados;
+
+    console.log('\n💳 Crédito parcelado');
+    const { calcularParcelas } = require('../src/utils/parcelas');
+    const op = calcularParcelas(250, { maxParcelas: 6, semJurosAte: 3, jurosMes: 2.99, parcelaMinima: 10 });
+    conferir(op[2].parcela === 83.33 && op[2].semJuros && op[5].parcela > 41.67 && !op[5].semJuros, `R$ 250: 3x de 83,33 sem juros; 6x de ${op[5].parcela} com juros`);
+    conferir(calcularParcelas(25, { maxParcelas: 6, semJurosAte: 6, jurosMes: 0, parcelaMinima: 10 }).length === 2, 'parcela mínima de R$ 10 limita (R$ 25 → até 2x)');
+    await api('PUT', '/painel/loja', { pagamento: { nomeRecebedor: 'LOJA TESTE', cidade: 'SAO GONCALO', aceitaNaEntrega: true, chavePix: 'teste@pix.com', formasNaEntrega: ['cartao_credito', 'dinheiro'], parcelamento: { maxParcelas: 3, semJurosAte: 3, jurosMes: 0, parcelaMinima: 10 } } }, tokenLojista);
+    r = await api('GET', `/publico/lojas/${slug}`);
+    conferir(r.dados?.pagamento?.parcelamento?.maxParcelas === 3, 'vitrine recebe a regra de parcelamento');
+    r = await api('POST', `/publico/lojas/${slug}/pedidos`, { itens: [{ produtoId: camiseta._id, varId: varG, qtd: 1 }], modo: 'retirada', pagamento: 'na_entrega', formaNaEntrega: 'cartao_credito', parcelas: 6 }, tokenCliente);
+    conferir(r.status === 400, 'mais parcelas do que a loja permite é recusado', r.dados);
+    r = await api('POST', `/publico/lojas/${slug}/pedidos`, { itens: [{ produtoId: camiseta._id, varId: varG, qtd: 1 }], modo: 'retirada', pagamento: 'na_entrega', formaNaEntrega: 'cartao_credito', parcelas: 3 }, tokenCliente);
+    conferir(r.status === 201 && r.dados.parcelas === 3, 'pedido no crédito em 3x', r.dados);
+    await api('POST', `/publico/lojas/${slug}/pedidos/${r.dados._id}/cancelar`, {}, tokenCliente);
+    cam = await models.Produto.findById(camiseta._id).lean();
+    conferir(cam.variacoes[1].estoque === 1, 'estoque certo depois da recusa por parcelas e do cancelamento');
     conferir(r.status === 201 && p2.total === 59.9, 'retirada sem frete', r.dados);
     r = await api('POST', `/painel/pedidos/${p2._id}/aprovar`, {}, tokenLojista);
     conferir(r.dados?.status === 'em_preparo', 'aprovado → direto para "em preparo" (paga na retirada)', r.dados);

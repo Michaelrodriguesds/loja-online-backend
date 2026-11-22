@@ -49,6 +49,12 @@ const lojaSchema = new Schema(
       cidade: { type: String, default: '' },
       aceitaNaEntrega: { type: Boolean, default: true }, // pagar na entrega/retirada (o lojista decide ao aprovar)
       // Como o cliente pode pagar na entrega/retirada (cartão é por aproximação na maquininha)
+      parcelamento: {
+        maxParcelas: { type: Number, default: 1, min: 1, max: 12 }, // 1 = sem parcelamento
+        semJurosAte: { type: Number, default: 1, min: 1, max: 12 },
+        jurosMes: { type: Number, default: 0, min: 0, max: 15 }, // % ao mês acima do sem juros
+        parcelaMinima: { type: Number, default: 10, min: 0 },
+      },
       formasNaEntrega: { type: [String], enum: ['cartao_credito', 'cartao_debito', 'pix', 'dinheiro'], default: ['cartao_credito', 'cartao_debito', 'pix', 'dinheiro'] },
     },
 
